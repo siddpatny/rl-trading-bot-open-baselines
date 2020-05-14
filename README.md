@@ -3,11 +3,12 @@
 2) Experiment with different trading strategies.
 3) Deploy multiple agents with RLLib.
 
+
 ## Dataset Description
 Folder: /data/concat.csv </br>
 Its a static dataset consisting of the bid_price,ask_price,bid_size,ask_size for 25 securities for 1000 timesteps
 
-# Requirements
+## Requirements
 tensorflow 1.x, PyTorch 1.5, Mpi4py, cuda
 
 ## Configuration
@@ -18,6 +19,8 @@ Look out for:
 3) Strategy: Trading Strategy to implement
 4) Train,Test Size
 
+## To Run
+python main.py
 
 ## Algorithms
 RL Algorithms and Policy:
