@@ -2,7 +2,7 @@
 Create a Portfolio of Stocks using Open AI gym's stable baselines
 
 ## Dataset Description
-Folder: /data/concat.csv
+Folder: /data/concat.csv </br>
 Its a static dataset consisting of the bid_price,ask_price,bid_size,ask_size for 25 securities for 1000 timesteps
 
 # Requirements
@@ -21,7 +21,7 @@ Look out for:
 RL Algorithms and Policy:
 1) DDPG - DDPGMLP 
 2) TD3 - TD3MLP
-3) PPO2 - MLPLSTM
+3) PPO2 - MLPLSTM </br>
 These alogrithms are imported from stable baselines [[1]](#1) and trained in a custom Open AI Gym env [[2]](#2).
 
 ## Custom Env
@@ -29,7 +29,7 @@ Folder: /env
 1) (Default) sidd_trading_env: My custom gym env for custom trading strategy for 25 securities.
 2) securities_trading_env: Single security trading algorithm with discrete actions - buy, sell, hold.
 
-Observation Space: Box - current bid_price of 25 securities + bias (26,)
+Observation Space: Box - current bid_price of 25 securities + bias (26,) </br>
 Action Space: Box - 26 row vector containing weights of for the 25 securities + bias term in the range [0,1] (Only longs or reallocation, no shorts (negative weights))
 
 ## Trading Strategies
@@ -58,15 +58,21 @@ Currently getting issues during configuration of multiple agents running on the 
 ## References
 <a id="1">[1]</a> 
 https://stable-baselines.readthedocs.io/en/master/
+
 <a id="2">[2]</a>
 https://gym.openai.com/
+
 <a id="3">[3]</a>
 https://docs.ray.io/en/master/tune.html
+
 <a id="4">[4]</a>
 https://github.com/ray-project/ray/blob/master/python/ray/tune/examples/pbt_ppo_example.py
+
 <a id="5">[5]</a>
 https://github.com/ray-project/ray/blob/master/rllib/examples/multi_agent_two_trainers.py
+
 <a id="6">[6]</a>
 https://github.com/ray-project/ray/blob/master/rllib/examples/rock_paper_scissors_multiagent.py
+
 <a id="7">[7]</a>
 https://github.com/ray-project/ray
