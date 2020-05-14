@@ -102,112 +102,29 @@ def use_gym(algo,args):
 		model = DDPG(ddpgMlpPolicy, env, verbose=int(args.verboseFlag), param_noise=param_noise, action_noise= action_noise)
 	elif(algo=="TD3"):
 		model = TD3(td3MlpPolicy, env, verbose=int(args.verboseFlag))
-	elif(algo=="GAIL"):
-		model = TD3(td3MlpPolicy, env, verbose=int(args.verboseFlag))
+	# elif(algo=="GAIL"):
+	# 	model = TD3(td3MlpPolicy, env, verbose=int(args.verboseFlag))
 	else:
 		model = PPO2(MlpPolicy, env, verbose=int(args.verboseFlag))
 
 
 	for e in range(episodes):
 		print("EPISODE====>" + str(e))
-		# obs = env.reset()
-		# obs = env.reset()
+
+		model.learn(total_timesteps = train_steps)
+		env.reset()
+
 		total_r = 0.
 		total_l = 0.
 
-		if (args.loadFlag == "no_path"):
-			if (algo == "PPO2"):
-				# model = PPO2(MlpPolicy, env, verbose=int(args.verboseFlag))
-				model.learn(total_timesteps=train_steps)
-				obs = env.reset()
-
-				for i in range(test_steps):
-				    action, _states = model.predict(obs)
-				    obs, rewards, done, info = env.step(action)
-				    total_l += 1.
-				    total_r += rewards
-				    if done:
-				    	break
-				    env.render()
-
-
-			elif (algo == "TD3"):
-				# model = TD3(td3MlpPolicy, env, verbose=int(args.verboseFlag))
-				model.learn(total_timesteps=train_steps, log_interval=10)
-				obs = env.reset()
-
-				for i in range(test_steps):
-				    action, _states = model.predict(obs)
-				    obs, rewards, done, info = env.step(action)
-				    total_l += 1.
-				    total_r += rewards
-				    if done:
-				    	break
-				    env.render()
-
-				# model_save = "save/TD3"+"-"+datenow+".h5"
-				# print("Model saved as: ",model_save)
-				# model.save(model_save)
-			
-			elif (algo == "DDPG"):
-				# model = DDPG(ddpgMlpPolicy, env, verbose=int(args.verboseFlag), param_noise=None, action_noise= None)
-				model.learn(total_timesteps=train_steps)
-				obs = env.reset()
-
-				for i in range(test_steps):
-				    action, _states = model.predict(obs)
-				    obs, rewards, done, info = env.step(action)
-				    total_l += 1.
-				    total_r += rewards
-				    if done:
-				    	break
-				    env.render()
-
-			elif (algo == "GAIL"):
-				generate_expert_traj(model, env, n_timesteps=train_steps)
-				obs = env.reset()
-				for i in range(test_steps):
-				  action, _states = model.predict(obs)
-				  obs, rewards, dones, info = env.step(action)
-				  env.render()
-				# model_save = "save/DDPG"+"-"+datenow+".h5"
-				# print("Model saved as: ",model_save)
-				# model.save(model_save)
-
-		else:
-			if (algo == "PPO2"):
-				model = PPO2(MlpPolicy, env, verbose=int(args.verboseFlag))
-				model.load(args.loadFlag)
-				obs = env.reset()
-
-				for i in range(test_steps):
-				    action, _states = model.predict(obs)
-				    obs, rewards, done, info = env.step(action)
-				    env.render()
-
-			elif (algo == "TD3"):
-				model = TD3(td3MlpPolicy, env, verbose=int(args.verboseFlag))
-				model.load(args.loadFlag)
-				obs = env.reset()
-
-				for i in range(test_steps):
-				    action, _states = model.predict(obs)
-				    obs, rewards, done, info = env.step(action)
-				    env.render()
-			
-			elif (algo == "DDPG"):
-				# model = DDPG(ddpgMlpPolicy, env, verbose=int(args.verboseFlag), param_noise=None, action_noise= NormalActionNoise)
-				model.load(args.loadFlag)
-				obs = env.reset()
-
-				for i in range(test_steps):
-				    action, _states = model.predict(obs)
-				    obs, rewards, done, info = env.step(action)
-				    total_l += 1.
-				    total_r += rewards
-				    if done:
-				    	break
-				    env.render()
+		for i in range(test_steps):
+		    action, _states = model.predict(obs)
+		    obs, rewards, done, info = env.step(action)
+		    total_l += 1.
+		    total_r += rewards
+		    if done:
+		    	break
+		    env.render()
 
 		ep_r.append(total_r)
 		ep_l.append(total_l)
@@ -218,17 +135,21 @@ def use_gym(algo,args):
 	print("Model saved as: ",model_save)
 	model.save(model_save)
 
+
+
 use_gym(algo,args)
 
 
 def use_rllib(algo,args):
 		ray.init()
 
+
+
 		register_env("securities_trading_env",lambda _: securities_trading_env(df))
-		env = SubprocVecEnv([make_env(env_id, log_dir, i+worker_id) for i in range(num_env)])
-		single_env = DummyVecEnv([lambda: securities_trading_env(df)])
-		obs_space = single_env.observation_space
-		act_space = single_env.action_space
+		# env = SubprocVecEnv([make_env(env_id, log_dir, i+worker_id) for i in range(num_env)])
+		env = DummyVecEnv([lambda: securities_trading_env(df)])
+		obs_space = env.observation_space
+		act_space = env.action_space
 
 		# You can also have multiple policies per trainer, but here we just
 		# show one each for PPO and DQN.
@@ -259,7 +180,7 @@ def use_rllib(algo,args):
 		})
 
 		dqn_trainer = DQNTrainer(
-		env="multi_agent_cartpole",
+		env="securities_trading_env",
 		config={
 		    "multiagent": {
 		        "policies": policies,
