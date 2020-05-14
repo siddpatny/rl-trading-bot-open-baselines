@@ -1,5 +1,7 @@
 # rl-trading-bot-open-baselines
-Create a Portfolio of Stocks using Open AI gym's stable baselines
+1) Create a Portfolio of Stocks using a reinforcement agent from Open AI gym's stable baselines.
+2) Experiment with different trading strategies.
+3) Deploy multiple agents with RLLib.
 
 ## Dataset Description
 Folder: /data/concat.csv </br>
