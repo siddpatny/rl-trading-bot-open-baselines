@@ -147,9 +147,9 @@ class securities_trading_env(gym.Env):
         if self.current_step > self.MAX_STEPS :
             self.current_step = 0
 
-        # weights = np.clip(action, self.action_space.low, self.action_space.high)
-        # weights /= (np.sum(np.abs(weights)) + 1e-9)
-        # weights[0] += np.clip(1 - np.sum(np.abs(weights)), 0, 1)
+        weights = np.clip(action, self.action_space.low, self.action_space.high)
+        weights /= (np.sum(np.abs(weights)) + 1e-9)
+        weights[0] += np.clip(1 - np.sum(np.abs(weights)), 0, 1)
 
 
         delay_modifier = (self.current_step / self.MAX_STEPS)
