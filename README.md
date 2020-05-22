@@ -45,6 +45,12 @@ Action Space: Box - 26 row vector containing weights of for the 25 securities + 
 The current action defines the weights of the portfolio. The sample from the action is clipped between 0,1 and normalized such that the sum of all the weights = 1. This ensures that the portfolio is completely utilized with a distribution of securities. (Only longs) </br>
 The reward for the action is log rate of return with the new weights of the portfolio normalized by the progress for a delayed reward.
 
+## RabbitMQ
+1) Get L1 data from RabbitMQ for selected list of securities
+2) Generate porfolio from model prediction for new observation
+3) Create orders, perfrom trades and update inventory based on the difference in the old and new inventory after successful trades.
+4) Calcualte portfolio value and PNL
+
 ## To Fix RLLib
 RLLib [[7]](#7) is another scalable reinforcement library that I want to use for 2 main purposes:
 1) Hyper-parameter tuning [[3]](#3) for the model. An example can be seen in [[4]](#4)
@@ -55,9 +61,6 @@ RLLib [[7]](#7) is another scalable reinforcement library that I want to use for
 Currently getting issues during configuration of multiple agents running on the same open ai custom env on different nodes.
 
 
-## Future Work
-1) Convert action into discrete buy,sell,hold based on portfolio weights and orders with bid,ask sizes
-2) Connect to RabbitMQ for stream of orders
 
 
 ## References
