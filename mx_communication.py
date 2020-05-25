@@ -25,9 +25,13 @@ class Communication:
         self.all_queue = ["L1", "L2", "L3", "L4", "L5"]
         # connect to the rabbitMQ server
         self.host = host # address of the rabbitMQ server
-        # self.credentials = pika.PlainCredentials('test2', 'test2')
-        # self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, credentials=self.credentials))
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
+        
+        try:
+            self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
+        except:
+            self.host = "172.29.208.37"
+            self.credentials = pika.PlainCredentials('test2', 'test2')
+            self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, credentials=self.credentials))
         self.channel = self.connection.channel()
         self._subscribe_to_levels()
         self._subscribe_to_trades()
