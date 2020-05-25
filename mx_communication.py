@@ -25,7 +25,10 @@ class Communication:
         self.all_queue = ["L1", "L2", "L3", "L4", "L5"]
         # connect to the rabbitMQ server
         self.host = host # address of the rabbitMQ server
-        
+        # self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
+        print("HOST--->"+self.host)
+        # self.credentials = pika.PlainCredentials('test2', 'test2')
+        # self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, credentials=self.credentials))
         try:
             self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
         except:

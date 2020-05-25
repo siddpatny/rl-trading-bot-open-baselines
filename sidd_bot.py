@@ -230,6 +230,7 @@ class management(Communication):
         self.env = env
         self.cash_balance = 1000000.0
         self.inventory = self._init_inventory(self.securities) # size of each security hold
+        self.proposed_inventory = self.inventory
         self.inventoryValue = 0.0
         self.PnL = self.cash_balance + self.inventoryValue
         
@@ -285,6 +286,7 @@ class management(Communication):
     def _update_inventory(self, symbol, size):
         self.inventory[symbol] += size
         print(" [X] inventory:")
+        self.proposed_inventory = self.inventory
         for sec in self.securities:
             print("%s : %d"%(sec, self.inventory[sec]))
 
@@ -295,6 +297,7 @@ class management(Communication):
                 inventoryValue += self.inventory[sec] * self.mid_market[sec]
         self.inventoryValue = inventoryValue
         print(" [X] inventory value: %d" % self.inventoryValue)
+        print(self.inventory)
 
     def _update_cash(self, size, price):
         self.cash_balance += size * price
@@ -395,8 +398,8 @@ class management(Communication):
     def callback_for_levels(self, tob):
         self._update_market_dict(tob)
         if  tob["symb"] in self.securities:
-            self._update_inventory_value()
-            self._update_pnl()
+            # self._update_inventory_value()
+            # self._update_pnl()
             self._model_reaction_to_level(tob)
 
     def _model_reaction_to_level(self, tob):
@@ -405,7 +408,7 @@ class management(Communication):
         
         
         observation = np.array([v for v in self.mid_market.values()])
-        print("[X] Observation count: %d : %d"%(len(self.observations), observation.size))
+        print("[X] Observation count: %d/%d"%(len(self.observations), self.window_size))
         if(self._condition_to_make_prediction() and observation.size == len(self.securities)):
             if(len(self.observations) == self.window_size+1):
                 print("Model reaction")
@@ -440,12 +443,14 @@ class management(Communication):
             print(new_inventory)
             orders = []
             for idx, sec in enumerate(self.mid_market.keys()):
-                quantity = abs(new_inventory[idx] - self.inventory[sec])
+                quantity = abs(new_inventory[idx] - self.proposed_inventory[sec])
                 action = "A"
-                if new_inventory[idx] > self.inventory[sec]:
+                if new_inventory[idx] > self.proposed_inventory[sec]:
                     side = "B"
-                elif new_inventory[idx] < self.inventory[sec]:
+                    self.proposed_inventory[sec] = new_inventory[idx]
+                elif new_inventory[idx] < self.proposed_inventory[sec]:
                     side = "S"
+                    self.proposed_inventory[sec] = new_inventory[idx]
                 else:
                     continue
 
