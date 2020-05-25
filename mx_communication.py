@@ -25,9 +25,9 @@ class Communication:
         self.all_queue = ["L1", "L2", "L3", "L4", "L5"]
         # connect to the rabbitMQ server
         self.host = host # address of the rabbitMQ server
-        self.credentials = pika.PlainCredentials('test2', 'test2')
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, credentials=self.credentials))
-        # self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
+        # self.credentials = pika.PlainCredentials('test2', 'test2')
+        # self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, credentials=self.credentials))
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
         self.channel = self.connection.channel()
         self._subscribe_to_levels()
         self._subscribe_to_trades()
@@ -135,7 +135,7 @@ class Communication:
         return order
 
     def _send_order(self, Order):
-        print(" [x] Send a new order for action ", Order["side"])
+        print(" [x] Send a new order for action %s : %d" % (Order["side"], Order['origQty']))
         order = self._parse_order(Order)
         self.channel.basic_publish(exchange='orders_pb', routing_key=order.symb, body=order.SerializeToString())
         print(" [x] Send order \n", order.orderNo)

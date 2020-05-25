@@ -80,8 +80,8 @@ class securities_trading_env(gym.Env):
         # print("ACTION:")
         # print(action.shape)
         # print(action)
-        # weights = np.clip(action, self.action_space.low, self.action_space.high)
-        weights = action
+        weights = np.clip(action, self.action_space.low, self.action_space.high)
+        # weights = action
         weights /= (np.sum(np.abs(weights)) + 1e-9)
         # weights[0] += np.clip(1 - np.sum(np.abs(weights)), 0, 1)
         # print(weights)
@@ -153,9 +153,9 @@ class securities_trading_env(gym.Env):
 
         # p1 = np.clip(p1, 0, np.inf)  # short not allowed
 
-        rho1 = p1 / p0 - 1  # rate of returns
-        r1 = (p1 + 1e-9) / (p0 + 1e-9) # log rate of return
-        reward = r1 *  (self.current_step/self.MAX_STEPS) # normalized logarithmic accumulated return
+        rho1 = (p1 / (p0+1e-9)) - 1  # rate of returns
+        r1 = (p1 + 1e-9) / (p0 + 1e-9) # rate of return
+        reward = p1*starting_money *  (self.current_step/self.MAX_STEPS) # normalized logarithmic accumulated return
         
         # remember for next step
         self.w0 = w1
