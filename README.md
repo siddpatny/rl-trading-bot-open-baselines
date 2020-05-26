@@ -65,7 +65,7 @@ Action Space: Box - range [0,1] (Only longs or reallocation, no negative invento
 3) Moving Average Convergence Diverngence: Get discreet signals on a rolling window by combining two moving averages
 
 Env:
-The current action defines the weights of the portfolio. The sample from the action is clipped between 0,1 and normalized such that the sum of all the weights = 1. This ensures that the portfolio is completely utilized with a distribution of securities. (Only longs) </br>
+The current action defines the weights of the portfolio. The sample from the action is clipped between 0,1 and normalized such that the sum of all the weights = 1. This ensures that the portfolio is completely utilized with a distribution of securities. (Only positive inventory values) </br>
 The reward for the action is log rate of return with the new weights of the portfolio normalized by the progress for a delayed reward.
 
 Bot:
