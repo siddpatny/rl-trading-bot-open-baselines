@@ -72,8 +72,6 @@ class management:
            self.model = DDPG(ddpgMlpPolicy, self.env, verbose=int(self.verbose), param_noise=param_noise, action_noise= action_noise)
         elif(self.policy=="TD3"):
             self.model = TD3(td3MlpPolicy, self.env, verbose=int(self.verbose))
-        elif(self.policy=="GAIL"):
-            self.model = TD3(td3MlpPolicy, self.env, verbose=int(self.verbose))
         else:
             self.model = PPO2(MlpLnLstmPolicy, self.env, verbose=int(self.verbose))
 

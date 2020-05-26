@@ -38,7 +38,7 @@ class Agent:
         # logging.debug("Current Inventory",current_inventory)
         new_inventory =  np.clip(actions, 0., 1.)
         	
-        alpha = np.random.uniform(low=0.5, high=1.5, size=new_inventory.shape)
+        alpha = np.random.uniform(low=0., high=2., size=new_inventory.shape)
         new_inventory *= alpha
         if (np.sum(np.abs(new_inventory))) != 0.:
             new_inventory /= (np.sum(np.abs(new_inventory)))
