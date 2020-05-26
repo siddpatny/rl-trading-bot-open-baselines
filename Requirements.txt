@@ -1,0 +1,5 @@
+tensorflow==1.15
+pandas
+gym
+pika
+stable-baselines[mpi]

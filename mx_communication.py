@@ -5,17 +5,15 @@ import pandas as pd
 import numpy as np
 import json
 import test_pb2
-import trading_account
-# import double_q_learning_multiple
 import collections
 from collections import deque
 import datetime
-# import get_q_learning_agent
 import sys
-
+import logging
 class Communication:
     def __init__(self, market_event_securities, market_event_queue, securities, queue, host,
-                 callback_for_levels, callback_for_acks, callback_for_trades,strategy):
+                 callback_for_levels, callback_for_acks, callback_for_trades):
+        logging.basicConfig(level=logging.INFO)
         # securities is included in market_event_securities
         self.num = len(market_event_securities) # number of securities being monitored, e.g. 5
         self.market_event_securities = market_event_securities # strings of securities, e.g. [ZFH0:MBO,ZTH0:MBO,UBH0:MBO,ZNH0:MBO,ZBH0:MBO]
@@ -23,8 +21,12 @@ class Communication:
         self.securities = securities # strings of securities that can be traded in e.g [ZFH0:MBO,ZTH0:MBO]
         self.queue = queue # strings of names of prices in securities, e.g. [L1,L2]
         self.all_queue = ["L1", "L2", "L3", "L4", "L5"]
+
+
         # connect to the rabbitMQ server
         self.host = host # address of the rabbitMQ server
+        
+        #self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host,credentials=pika.PlainCredentials('test2', 'test2')))
         # self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=self.host))
         print("HOST--->"+self.host)
         # self.credentials = pika.PlainCredentials('test2', 'test2')
@@ -35,12 +37,12 @@ class Communication:
             self.host = "172.29.208.37"
             self.credentials = pika.PlainCredentials('test2', 'test2')
             self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host, credentials=self.credentials))
+        
         self.channel = self.connection.channel()
         self._subscribe_to_levels()
         self._subscribe_to_trades()
         self._subscribe_to_acks()
         self._set_up_publish_exchange()
-        self.strategy = strategy
         
         # callback functions
         self.callback_for_levels = callback_for_levels
@@ -60,7 +62,7 @@ class Communication:
             self.channel.basic_consume(queue = sym + "__" + Ln, on_message_callback = self.on_response_levels, auto_ack = True)
 
     def on_response_levels(self, ch, method, properties, body):
-        print("\n [x] Received Level Data")
+        logging.debug("\n [X] Received Level Data")
         l2Data = test_pb2.L2Data()
         l2Data.ParseFromString(body)
         tob = dict()
@@ -74,7 +76,7 @@ class Communication:
             tob[lv+"BidPrice"] = dictBidPrice[lv]
             tob[lv+"AskSize"] = dictAskSize[lv]
             tob[lv+"BidSize"] = dictBidSize[lv]
-        print(" [x] Received level with listening security: ", tob["symb"])
+        logging.debug(" [X] Received level with listening security: %s" % tob["symb"])
         
         # what will the bot do when it receives a market event?
         # --- define the behavior in callback_for_levels
@@ -89,13 +91,13 @@ class Communication:
             if sym in self.securities:
                 self.channel.basic_consume(queue = sym + "__trade", on_message_callback = self.on_response_trades, auto_ack = True)
             else:
-                print("undefined callback behavior for trades of %s"%sym)
+                logging.debug("\n [X] undefined callback behavior for trades of %s"%sym)
     
     def on_response_trades(self, ch, method, properties, body):
-        print("\n [x] Received trade")
+        logging.debug("\n [X] Received trade")
         tradeobj = test_pb2.TradeOrder()
         tradeobj.ParseFromString(body)
-        print(" [x] Received trade with listening security: ", str(tradeobj.symbol))
+        logging.debug(" [X] Received trade with listening security: %s" % str(tradeobj.symbol))
         
         # what will the bot do when it receives a trade event?
         # --- define the behavior in callback_for_trades (tradeobj are trades related to a symbol
@@ -112,11 +114,10 @@ class Communication:
             self.channel.basic_consume(queue = sym + "__ACK", on_message_callback = self.on_response_acks, auto_ack = True)
 
     def on_response_acks(self, ch, method, properties, body):
-        print("\n [x] Received acknowledge")
+        logging.debug("\n [x] Received acknowledge")
         aMobj = test_pb2.aM()
         aMobj.ParseFromString(body)
-        if(aMobj.strategy == self.strategy):
-            print(" [x] Received ACK with listening security: %s from strategy %s", (str(aMobj.symb), aMobj.strategy) )
+        logging.debug(" [x] Received ACK with listening security: %s from strategy %s" % (str(aMobj.symb), aMobj.strategy) )
         
         # what will the bot do when it receives an ack for submitting an order or canceling an order?
         # --- define the behavior in callback_for_acks (aMobj are acks related to a symbol
@@ -142,14 +143,14 @@ class Communication:
         return order
 
     def _send_order(self, Order):
-        print(" [x] Send a new order for action %s : %d" % (Order["side"], Order['origQty']))
+        logging.debug("\n [X] Send a new order for action %s" % Order["side"])
         order = self._parse_order(Order)
         self.channel.basic_publish(exchange='orders_pb', routing_key=order.symb, body=order.SerializeToString())
-        print(" [x] Send order \n", order.orderNo)
+        logging.debug(" [X] Send order ", order.orderNo)
 
     def _cancel_order(self, Order):
         Order["action"] = "D"
-        print(" [x] Cancel an order for action ", Order["side"])
+        logging.debug("\n [X] Cancel an order for action %s" % Order["side"])
         order = self._parse_order(Order)
         self.channel.basic_publish(exchange='orders_pb', routing_key=order.symb, body=order.SerializeToString())
-        print(" [x] Cancel order \n", order.orderNo)
+        logging.debug(" [X] Cancel order %s" % str(order.orderNo))

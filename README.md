@@ -1,7 +1,8 @@
+
 # rl-trading-bot-open-baselines
 1) Create a Portfolio of Stocks using a reinforcement agent from Open AI gym's stable baselines.
 2) Experiment with different trading strategies.
-3) Deploy multiple agents with RLLib.
+3) Connect to RabbitMQ to excecute orders and generate PnL
 
 
 ## Dataset Description
@@ -9,20 +10,42 @@ Folder: /data/concat.csv </br>
 Its a static dataset consisting of the bid_price,ask_price,bid_size,ask_size for 25 securities for 1000 timesteps
 
 ## Requirements
-tensorflow 1.x, PyTorch 1.5, Mpi4py, cuda
+Check requirements.txt (python -m pip install -r requirements.txt) </br>
+Requires Python 3.6/3.7 </br>
+Conda Env for the 100 server: conda activate /home/citi/anaconda3/envs/cudf-nightly
+
+
 
 ## Configuration
 File: config.ini
+Change:
+1) Bot Number
+2) Model (Path of the saved Model or to save model)
+
 Look out for:
 1) Baseline Algorithm: (DDPG/TD3/PPO2)
 2) Episodes: No of epochs to train
 3) Strategy: Trading Strategy to implement
 4) Train,Test Size
+5) Window Size for Technical Indicators
+6) List of Securities to listen and trade on
+
+The Env and the Bot have can have different strategies and initial capital if required.
+
 
 ## To Run
-python main.py
+python rl_trading_bot.py [--load] [--no-train] [--train-only]
+Options/Arguments:
+1) load the pretrained model from the modelpath in the config
+2) do not train on static data
+3) only train and save the model
 
-## Algorithms
+Save folder for model and logs: save/
+
+
+## Agent
+file: agent.py
+To train, react to levels data, trade data, generate orders based on the actions of the model.
 RL Algorithms and Policy:
 1) DDPG - DDPGMLP 
 2) TD3 - TD3MLP
@@ -31,36 +54,32 @@ These alogrithms are imported from stable baselines [[1]](#1) and trained in a c
 
 ## Custom Env
 Folder: /env
-1) (Default) sidd_trading_env: My custom gym env for custom trading strategy for 25 securities.
-2) securities_trading_env: Single security trading algorithm with discrete actions - buy, sell, hold.
+gym_trading_env: My custom gym env for custom trading strategy for the selected list of securities
 
-Observation Space: Box - current bid_price of 25 securities + bias (26,) </br>
-Action Space: Box - 26 row vector containing weights of for the 25 securities + bias term in the range [0,1] (Only longs or reallocation, no shorts (negative weights))
+Observation Space: Box - average of bid and price stocks for selected securities </br>
+Action Space: Box - range [0,1] (Only longs or reallocation, no negative inventory (negative weights))
 
 ## Trading Strategies
 1) Momentum: Ratio of the average bid price in the window with the average price upto current step.
-2) Ask/Bid Ratio: Takes a long position weighted by the bid ask spread.
-3) Mean Reversion: Inverse of momentum. Assumes the security is mean reverting.
+2) Mean Reversion: Inverse of momentum. Assumes the security is mean reverting.
+3) Moving Average Convergence Diverngence: Get discreet signals on a rolling window by combining two moving averages
 
+Env:
 The current action defines the weights of the portfolio. The sample from the action is clipped between 0,1 and normalized such that the sum of all the weights = 1. This ensures that the portfolio is completely utilized with a distribution of securities. (Only longs) </br>
 The reward for the action is log rate of return with the new weights of the portfolio normalized by the progress for a delayed reward.
 
+Bot:
+Similarly the current action defines the weights of the portfolio. The sample from the action is clipped between 0,1 and normalized such that the sum of all the weights = 1. Based on the distribution, te portfolio is reallocated and the agent sends buy or sell orders of quantitiy equal to the change of allocation.
+
 ## RabbitMQ
-1) Get L1 data from RabbitMQ for selected list of securities
-2) Generate porfolio from model prediction for new observation
-3) Create orders, perfrom trades and update inventory based on the difference in the old and new inventory after successful trades.
-4) Calcualte portfolio value and PNL
+File: mx_communication.py
+Create and listen to the channels and communicate with the bots.
+File: test_pb2.py
+Protocol buffer generated descriptors
 
-## To Fix RLLib
-RLLib [[7]](#7) is another scalable reinforcement library that I want to use for 2 main purposes:
-1) Hyper-parameter tuning [[3]](#3) for the model. An example can be seen in [[4]](#4)
-2) Multiple Agents: This can be done in two ways:
-  a) Train two different models and policies and sync them peiodically. [[5]](#5)
-  b) Train different strategies in an adverserial manner. [[6]](#6)
-
-Currently getting issues during configuration of multiple agents running on the same open ai custom env on different nodes.
-
-
+## Next Steps
+1) Train the agent on new levels data based on a rolling window rather than a static set of observations
+2) Update model and alphas in the bot based on the completed trade (Would require sync with the matching engine)
 
 
 ## References
@@ -70,17 +89,3 @@ https://stable-baselines.readthedocs.io/en/master/
 <a id="2">[2]</a>
 https://gym.openai.com/
 
-<a id="3">[3]</a>
-https://docs.ray.io/en/master/tune.html
-
-<a id="4">[4]</a>
-https://github.com/ray-project/ray/blob/master/python/ray/tune/examples/pbt_ppo_example.py
-
-<a id="5">[5]</a>
-https://github.com/ray-project/ray/blob/master/rllib/examples/multi_agent_two_trainers.py
-
-<a id="6">[6]</a>
-https://github.com/ray-project/ray/blob/master/rllib/examples/rock_paper_scissors_multiagent.py
-
-<a id="7">[7]</a>
-https://github.com/ray-project/ray

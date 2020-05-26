@@ -6,23 +6,9 @@ import pandas   as pd
 import numpy    as np
 from   gym      import spaces
 
-config = configparser.ConfigParser()
-config.read('config.ini')
 
 
-MAX_REWARD          = float(config['ENV']['MaximumReward'])
-Strategy          = str(config['ENV']['Strategy'])
-starting_money      = float(config['ENV']['StartingMoney'])
 
-current_money       = float(config['ENV']['StartingMoney'])
-actions             = ['buy','sell','hold']
-askPriceList        = []
-bidPriceList        = []
-debug               = 1
-# obsSpace            = int(config['ENV']['priceListpace'])
-initial_flag        = True 
-old_data            = np.empty((0,2), float)
-max_inventory       = float(config['ENV']['MaxInventory'])
 
 
 # print (ask_price_columns)
@@ -31,31 +17,30 @@ class securities_trading_env(gym.Env):
 
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, priceList,num):
-
-        global starting_money
+    def __init__(self, priceList):
 
         super(securities_trading_env, self).__init__()
 
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+
+
+        self.strategy            = str(config['ENV']['Strategy'])
+        self.starting_money      = float(config['ENV']['StartingMoney'])
+
+        self.current_money       = self.starting_money
+
+        
+
         self.priceList       = priceList.T
         # self.reward_range       = (0, MAX_REWARD)
-        self.MAX_STEPS          = len(self.priceList[0])  
-        print('init')
-        print(len(priceList[0]))
-        self.CURRENT_REWARD     = 0
-        # self.current_held_sec   = 0
+        self.max_steps          = len(self.priceList[0])
         self.current_step       = 0
         self.returns            = 0
 
-        # self.df_bidPrice        = df[df.columns[bid_price_columns[-num:]]].transpose().values
-        # self.bid_history        = self.df_bidPrice.copy()
-
-        # self.df_askPrice        = df[df.columns[ask_price_columns[-num:]]].transpose().values
-        # self.ask_history        = self.df_askPrice.copy()
-
-        self.w0                 = np.array([0.0] * num)
+        self.w0                 = np.array([0.0] * len(self.priceList))
         self.p0                 = 1.0
-        self.netWorth           = starting_money
+        self.netWorth           = self.starting_money
         # self.out_of_money       = False
         self.trading_cost       = 0.
 
@@ -63,14 +48,13 @@ class securities_trading_env(gym.Env):
         print('TOTAL LIST---->'+str(self.priceList.shape))
         # print(self.df_bidPrice[0])
 
-        self.action_space = spaces.Box(low=0., high=1., shape=(num,), dtype=np.float64)
+        self.action_space = spaces.Box(low=0., high=1., shape=(len(self.priceList),), dtype=np.float64)
         
-        self.observation_space = gym.spaces.Box(low=0, high=np.inf, shape=((num),), dtype=np.float64)
+        self.observation_space = gym.spaces.Box(low=0, high=np.inf, shape=((len(self.priceList)),), dtype=np.float64)
 
 
     def step(self, action):
 
-        global Strategy, max_inventory,starting_money
         # print(Strategy)
 
         # self._take_action(action)
@@ -116,11 +100,11 @@ class securities_trading_env(gym.Env):
 
         alpha = np.ones(curr_observation[:,-1].shape)
 
-        if(Strategy == 'Momentum'):
+        if(self.strategy == 'Momentum'):
             alpha = mean_value 
         # elif(Strategy == 'Bid-Ask'):
         #     alpha = ask_observation[:,-1] / observation[:,-1]
-        elif(Strategy == 'Mean-Reversion'):
+        elif(self.strategy == 'Mean-Reversion'):
             mean_value = (avg_window[:]/avg_now[:])
             alpha = mean_value 
 
@@ -155,7 +139,7 @@ class securities_trading_env(gym.Env):
 
         rho1 = (p1 / (p0+1e-9)) - 1  # rate of returns
         r1 = (p1 + 1e-9) / (p0 + 1e-9) # rate of return
-        reward = p1*starting_money *  (self.current_step/self.MAX_STEPS) # normalized logarithmic accumulated return
+        reward = p1*self.starting_money *  (self.current_step/self.max_steps) # normalized logarithmic accumulated return
         
         # remember for next step
         self.w0 = w1
@@ -164,43 +148,30 @@ class securities_trading_env(gym.Env):
         # if we run out of money, we're done (losing all the money)
         # self.out_of_money = (p1 == 0)
 
-        self.netWorth = p1*starting_money
+        self.current_money = p1*self.starting_money
         self.returns = rho1
 
-        done = self.current_step >= self.MAX_STEPS
+        done = self.current_step >= self.max_steps
 
         return curr_observation.reshape(-1), reward, done, {'return':self.returns,'portfolio value':self.netWorth}
 
 
 
     def reset(self):
-        global starting_money
 
-        self.CURRENT_REWARD     = 0
         self.current_step       = 0
-        # current_money           = starting_money
-        # df                      = self.df
-        # priceList
-        # self.current_held_sec   = 0
-        # askPriceList            = []
-        # bidPriceList            = []
-        # initial_flag            = True
-        # old_data                = np.empty((0,2), float)
-        self.netWorth           = starting_money
+        self.netWorth           = self.starting_money
         self.returns            = 0
 
         self.w0 = np.array([0.0] * len(self.priceList))
         self.p0 = 1.0
 
-        curr_observation = self.priceList[:, self.current_step:self.current_step+1].copy() 
-        # bias_observation = np.ones((1, obsSpace))
-        # observation_with_bias = np.concatenate((bias_observation, observation), axis=0)
+        curr_observation = self.priceList[:, 0].copy() 
         
         return curr_observation.reshape(-1)
 
 
     def render(self, mode='human', close=False):
-        global  current_money
 
         print(f'Step: {self.current_step}')
         # print(f'Price: {self.current_bidPrice}')
